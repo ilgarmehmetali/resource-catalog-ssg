@@ -1,0 +1,8 @@
+Linux & Shell Quick Reference
+=============================
+- tar -czvf archive.tar.gz /path/to/dir
+- curl -I https://example.com
+- grep -rnw '/path/to/somewhere/' -e 'pattern'
+- find . -name "*.txt"
+- du -sh * | sort -h
+

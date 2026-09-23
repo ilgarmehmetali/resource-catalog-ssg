@@ -1,0 +1,27 @@
+# Build output
+dist/
+_site/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+env/
+venv/
+
+# Node / JS
+node_modules/
+npm-debug.log*
+
+# System / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+

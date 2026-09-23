@@ -1,0 +1,7 @@
+title: Directory Backup Helper Script
+description: POSIX bash utility to create timestamped tar.gz archives.
+tags:
+  - bash
+  - backup
+  - automation
+

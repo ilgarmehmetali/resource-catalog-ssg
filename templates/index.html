@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resource Catalog</title>
+  <meta name="description" content="A generic static resource catalog with instant search and folder navigation.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#/about" class="brand">
+        <span class="brand-icon">📚</span>
+        <span class="brand-name">Resource Catalog</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#/about" class="active">About</a>
+        <a href="#/catalog">Catalog</a>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="search-input-wrapper">
+          <input
+            type="search"
+            id="global-search"
+            class="search-input"
+            placeholder="Search catalog..."
+            aria-label="Search resources"
+          >
+        </div>
+        <button id="theme-toggle" class="btn btn-outline btn-sm" title="Toggle theme">
+          🌙
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main id="main-content" class="container">
+    <div class="empty-state">
+      <p>Loading catalog resources...</p>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="footer">
+    <p>Powered by <a href="https://github.com" target="_blank" rel="noopener">Generic Resource Catalog Generator</a> • Generated statically</p>
+  </footer>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
+
