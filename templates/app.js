@@ -34,6 +34,23 @@ function sanitizeUrl(url) {
   return escapeHtml(String(url).trim());
 }
 
+function t(key, fallback = "", stringsOverride = null) {
+  const strings = stringsOverride || (typeof state !== "undefined" && state.catalog && state.catalog.strings) || {};
+  if (key.includes(".")) {
+    const parts = key.split(".");
+    let val = strings;
+    for (const p of parts) {
+      if (val && typeof val === "object" && p in val) {
+        val = val[p];
+      } else {
+        return fallback;
+      }
+    }
+    return val !== undefined ? String(val) : fallback;
+  }
+  return strings[key] !== undefined ? String(strings[key]) : fallback;
+}
+
 // --- Pure Utility & Routing Functions (Testable) ---
 
 function parseRoute(hashString) {
@@ -72,7 +89,7 @@ function parseRoute(hashString) {
 }
 
 function buildBreadcrumbs(folderPath) {
-  const breadcrumbs = [{ title: "Catalog", path: "" }];
+  const breadcrumbs = [{ title: t("nav_catalog", "Catalog"), path: "" }];
   if (!folderPath) return breadcrumbs;
 
   const parts = folderPath.split("/").filter(Boolean);
@@ -257,9 +274,8 @@ async function initApp() {
     if (contentEl) {
       contentEl.innerHTML = `
         <div class="empty-state">
-          <h2>Unable to load catalog data</h2>
-          <p>Please verify that <code>catalog.json</code> exists and the site is served via HTTP/HTTPS.</p>
-          <pre>${escapeHtml(err.message)}</pre>
+          <h2>${escapeHtml(t("error_catalog_load", "Unable to load catalog data"))}</h2>
+          <p>${escapeHtml(err.message)}</p>
         </div>
       `;
     }
@@ -298,8 +314,8 @@ function copyToClipboard(text) {
   if (typeof navigator !== "undefined" && navigator.clipboard) {
     navigator.clipboard
       .writeText(text)
-      .then(() => showToast("Link copied to clipboard!"))
-      .catch(() => showToast("Failed to copy link"));
+      .then(() => showToast(t("link_copied", "Link copied to clipboard!")))
+      .catch(() => showToast(t("link_copy_failed", "Failed to copy link")));
   }
 }
 
@@ -425,7 +441,7 @@ function renderAboutView(about = {}) {
 
       <div class="about-cta-container">
         <a href="#/catalog" class="btn btn-primary cta-btn">
-          Explore the Catalog →
+          ${escapeHtml(t("about_cta_button", "Explore the Catalog →"))}
         </a>
       </div>
     </div>
@@ -454,29 +470,31 @@ function renderCatalogView(route) {
   const overviewHtml = folderData.overview
     ? `<div class="folder-overview markdown-body">${renderMarkdownBasic(folderData.overview)}</div>`
     : "";
+  const categoryPillsHtml = renderCategoryPills(category, route);
 
   const hasSubfolders = !isGlobalSearch && folderData.subfolders && folderData.subfolders.length > 0;
   const emptyMsg = hasSubfolders
-    ? "No direct files in this folder. Browse the subfolders above."
+    ? t("empty_subfolders_only", "No direct files in this folder. Browse the subfolders above.")
     : (isGlobalSearch
-        ? "No resources match your search or filter."
-        : "No resources found in this folder.");
+        ? t("empty_search", "No resources match your search or filter.")
+        : t("empty_folder", "No resources found in this folder."));
   const itemsListHtml = renderItemsList(filteredItems, emptyMsg);
+  const resourceUnit = filteredItems.length === 1 ? t("resource_singular", "resource found") : t("resource_plural", "resources found");
 
   return `
     <div class="catalog-layout">
       <div class="catalog-header-bar">
         <div class="breadcrumbs-container">${breadcrumbsHtml}</div>
         <div class="catalog-actions">
-          <button class="btn btn-sm btn-outline" data-copy-url="" title="Share link to this view">
-            🔗 Share Link
+          <button class="btn btn-sm btn-outline" data-copy-url="" title="${escapeHtml(t("share_link_title", "Share link to this view"))}">
+            ${escapeHtml(t("share_link_button", "🔗 Share Link"))}
           </button>
           <div class="view-toggle">
             <button class="btn btn-sm ${state.viewMode === "grid" ? "active" : ""}" data-view-mode="grid">
-              🔲 Grid
+              ${escapeHtml(t("view_grid", "🔲 Grid"))}
             </button>
             <button class="btn btn-sm ${state.viewMode === "table" ? "active" : ""}" data-view-mode="table">
-              📑 Table
+              ${escapeHtml(t("view_table", "📑 Table"))}
             </button>
           </div>
         </div>
@@ -491,11 +509,11 @@ function renderCatalogView(route) {
 
       <div class="results-header">
         <span class="results-count">
-          ${filteredItems.length} ${filteredItems.length === 1 ? "resource" : "resources"} found
+          ${filteredItems.length} ${escapeHtml(resourceUnit)}
         </span>
         ${
           isGlobalSearch
-            ? `<a href="#/catalog${folder ? `/${encodeURI(folder)}` : ""}" class="clear-filters-link">Clear filters ×</a>`
+            ? `<a href="#/catalog${folder ? `/${encodeURI(folder)}` : ""}" class="clear-filters-link">${escapeHtml(t("clear_filters", "Clear filters ×"))}</a>`
             : ""
         }
       </div>
@@ -517,7 +535,7 @@ function setViewMode(mode) {
 
 function renderBreadcrumbsHtml(folder, isSearch) {
   if (isSearch) {
-    return `<a href="#/catalog">Catalog</a> <span class="sep">/</span> <span>Search Results</span>`;
+    return `<a href="#/catalog">${escapeHtml(t("nav_catalog", "Catalog"))}</a> <span class="sep">/</span> <span>${escapeHtml(t("search_results_title", "Search Results"))}</span>`;
   }
   const crumbs = buildBreadcrumbs(folder);
   return crumbs
@@ -532,12 +550,12 @@ function renderBreadcrumbsHtml(folder, isSearch) {
 }
 
 function renderCategoryPills(activeCategory, route) {
-  const categories = state.catalog.categories || [];
-  const baseHash = route.folder ? `#/catalog/${encodeURI(route.folder)}` : "#/catalog";
+  const categories = (state.catalog && state.catalog.categories) || [];
+  const baseHash = route && route.folder ? `#/catalog/${encodeURI(route.folder)}` : "#/catalog";
 
   const allPill = `
     <a href="${baseHash}" class="filter-pill ${!activeCategory ? "active" : ""}">
-      All (${state.catalog.total_items || 0})
+      ${escapeHtml(t("all_filter", "All"))} (${(state.catalog && state.catalog.total_items) || 0})
     </a>
   `;
 
@@ -545,9 +563,10 @@ function renderCategoryPills(activeCategory, route) {
     .map((cat) => {
       const isActive = activeCategory === cat.id;
       const targetHash = isActive ? baseHash : `${baseHash}?category=${encodeURIComponent(cat.id)}`;
+      const catLabel = t("categories." + cat.id, cat.id);
       return `
         <a href="${targetHash}" class="filter-pill ${isActive ? "active" : ""}">
-          ${getCategoryIcon(cat.id)} ${escapeHtml(cat.id)} (${cat.count || 0})
+          ${getCategoryIcon(cat.id)} ${escapeHtml(catLabel)} (${cat.count || 0})
         </a>
       `;
     })
@@ -563,7 +582,8 @@ function renderSubfoldersHtml(subfolders) {
       const data = (state.catalog.folders && state.catalog.folders[sf]) || {};
       const name = data.title || sf.split("/").pop();
       const count = data.item_count || 0;
-      const countLabel = count === 1 ? "1 item" : `${count} items`;
+      const countUnit = count === 1 ? t("item_singular", "item") : t("item_plural", "items");
+      const countLabel = `${count} ${countUnit}`;
       return `
         <a href="#/catalog/${encodeURI(sf)}" class="subfolder-card">
           <span class="subfolder-icon">📁</span>
@@ -578,7 +598,7 @@ function renderSubfoldersHtml(subfolders) {
 
   return `
     <div class="subfolders-section">
-      <h3 class="section-title">Subfolders</h3>
+      <h3 class="section-title">${escapeHtml(t("subfolders_title", "Subfolders"))}</h3>
       <div class="subfolders-grid">${cards}</div>
     </div>
   `;
@@ -605,14 +625,14 @@ function renderItemsList(items, emptyMsg = "No resources match your current sele
             </a>
             ${item.description ? `<p class="item-table-desc">${escapeHtml(item.description)}</p>` : ""}
           </td>
-          <td class="col-category"><span class="badge">${escapeHtml(item.category)}</span></td>
+          <td class="col-category"><span class="badge">${escapeHtml(t("categories." + item.category, item.category))}</span></td>
           <td class="col-size">${escapeHtml(item.size_formatted)}</td>
           <td class="col-tags">
             ${(item.tags || []).map((t) => `<a href="#/catalog?tag=${encodeURIComponent(t)}" class="tag-pill">${escapeHtml(t)}</a>`).join(" ")}
           </td>
           <td class="col-actions">
-            <a href="${sanitizeUrl(item.url)}" download class="btn btn-sm btn-primary" title="Download">⬇️</a>
-            <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" title="Open directly">↗️</a>
+            <a href="${sanitizeUrl(item.url)}" download class="btn btn-sm btn-primary" title="${escapeHtml(t("card_download", "Download"))}">⬇️</a>
+            <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" title="${escapeHtml(t("card_open", "Open"))}">↗️</a>
           </td>
         </tr>
       `
@@ -625,11 +645,11 @@ function renderItemsList(items, emptyMsg = "No resources match your current sele
           <thead>
             <tr>
               <th></th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Size</th>
-              <th>Tags</th>
-              <th>Actions</th>
+              <th>${escapeHtml(t("table_col_name", "Name"))}</th>
+              <th>${escapeHtml(t("table_col_category", "Category"))}</th>
+              <th>${escapeHtml(t("table_col_size", "Size"))}</th>
+              <th>${escapeHtml(t("table_col_tags", "Tags"))}</th>
+              <th>${escapeHtml(t("table_col_actions", "Actions"))}</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -653,7 +673,7 @@ function renderItemsList(items, emptyMsg = "No resources match your current sele
         <div class="resource-card">
           <div class="card-header">
             <span class="card-icon">${getCategoryIcon(item.category)}</span>
-            <span class="badge">${escapeHtml(item.category)}</span>
+            <span class="badge">${escapeHtml(t("categories." + item.category, item.category))}</span>
           </div>
           <div class="card-body">
             <a href="#/item/${encodeURIComponent(item.path)}" class="card-title-link">
@@ -667,9 +687,9 @@ function renderItemsList(items, emptyMsg = "No resources match your current sele
             ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ""}
           </div>
           <div class="card-footer">
-            <a href="${sanitizeUrl(item.url)}" download class="btn btn-sm btn-primary">Download</a>
-            <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">Open</a>
-            <button class="btn btn-sm btn-ghost" data-copy-url="${escapeHtml(itemShareUrl)}" title="Copy item link">🔗</button>
+            <a href="${sanitizeUrl(item.url)}" download class="btn btn-sm btn-primary">${escapeHtml(t("card_download", "Download"))}</a>
+            <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">${escapeHtml(t("card_open", "Open"))}</a>
+            <button class="btn btn-sm btn-ghost" data-copy-url="${escapeHtml(itemShareUrl)}" title="${escapeHtml(t("card_copy_link_title", "Copy item link"))}">🔗</button>
           </div>
         </div>
       `;
@@ -682,9 +702,9 @@ function renderItemModalOrView(itemPath) {
   if (!item) {
     return `
       <div class="empty-state">
-        <h2>Resource Not Found</h2>
-        <p>Could not find item at path: <code>${escapeHtml(itemPath)}</code></p>
-        <a href="#/catalog" class="btn btn-primary">Return to Catalog</a>
+        <h2>${escapeHtml(t("item_not_found_title", "Resource Not Found"))}</h2>
+        <p>${escapeHtml(t("item_not_found_message", "Could not find item at path:"))} <code>${escapeHtml(itemPath)}</code></p>
+        <a href="#/catalog" class="btn btn-primary">${escapeHtml(t("return_to_catalog", "Return to Catalog"))}</a>
       </div>
     `;
   }
@@ -717,8 +737,8 @@ function renderItemModalOrView(itemPath) {
   } else if (item.category === "markdown" || item.category === "code" || item.extension === ".txt") {
     previewContent = `
       <div class="text-preview-box">
-        <p><em>Text preview loading...</em></p>
-        <pre><code id="file-raw-content">Loading content...</code></pre>
+        <p><em>${escapeHtml(t("preview_loading", "Text preview loading..."))}</em></p>
+        <pre><code id="file-raw-content">${escapeHtml(t("preview_loading_content", "Loading content..."))}</code></pre>
       </div>
     `;
     fetch(item.url)
@@ -733,8 +753,8 @@ function renderItemModalOrView(itemPath) {
   return `
     <div class="item-detail-view">
       <div class="item-detail-header">
-        <a href="${backFolder}" class="back-link">← Back to folder</a>
-        <button class="btn btn-sm btn-outline" data-copy-url="">🔗 Copy Share Link</button>
+        <a href="${backFolder}" class="back-link">${escapeHtml(t("back_to_folder", "← Back to folder"))}</a>
+        <button class="btn btn-sm btn-outline" data-copy-url="">${escapeHtml(t("copy_share_link", "🔗 Copy Share Link"))}</button>
       </div>
 
       <div class="item-detail-card">
@@ -749,11 +769,11 @@ function renderItemModalOrView(itemPath) {
         ${item.description ? `<p class="detail-desc">${escapeHtml(item.description)}</p>` : ""}
 
         <div class="detail-meta-grid">
-          <div><strong>Category:</strong> ${escapeHtml(item.category)}</div>
-          <div><strong>Size:</strong> ${escapeHtml(item.size_formatted)} (${escapeHtml(item.size_bytes.toLocaleString())} bytes)</div>
-          <div><strong>Path:</strong> <code>${escapeHtml(item.path)}</code></div>
-          <div><strong>Last Modified:</strong> ${escapeHtml(new Date(item.modified).toLocaleDateString())}</div>
-          ${item.author ? `<div><strong>Author:</strong> ${escapeHtml(item.author)}</div>` : ""}
+          <div><strong>${escapeHtml(t("detail_label_category", "Category:"))}</strong> ${escapeHtml(t("categories." + item.category, item.category))}</div>
+          <div><strong>${escapeHtml(t("detail_label_size", "Size:"))}</strong> ${escapeHtml(item.size_formatted)} (${escapeHtml(item.size_bytes.toLocaleString())} ${escapeHtml(t("detail_label_bytes", "bytes"))})</div>
+          <div><strong>${escapeHtml(t("detail_label_path", "Path:"))}</strong> <code>${escapeHtml(item.path)}</code></div>
+          <div><strong>${escapeHtml(t("detail_label_modified", "Last Modified:"))}</strong> ${escapeHtml(new Date(item.modified).toLocaleDateString())}</div>
+          ${item.author ? `<div><strong>${escapeHtml(t("detail_label_author", "Author:"))}</strong> ${escapeHtml(item.author)}</div>` : ""}
         </div>
 
         ${tagsHtml ? `<div class="detail-tags">${tagsHtml}</div>` : ""}
@@ -761,8 +781,8 @@ function renderItemModalOrView(itemPath) {
         ${previewContent}
 
         <div class="detail-actions">
-          <a href="${sanitizeUrl(item.url)}" download class="btn btn-primary">⬇️ Download File</a>
-          <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-outline">↗️ Open in New Tab</a>
+          <a href="${sanitizeUrl(item.url)}" download class="btn btn-primary">${escapeHtml(t("detail_download_file", "⬇️ Download File"))}</a>
+          <a href="${sanitizeUrl(item.url)}" target="_blank" rel="noopener" class="btn btn-outline">${escapeHtml(t("detail_open_tab", "↗️ Open in New Tab"))}</a>
         </div>
       </div>
     </div>
@@ -777,11 +797,15 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     escapeHtml,
     sanitizeUrl,
+    t,
     parseRoute,
     buildBreadcrumbs,
     filterItems,
     renderMarkdownBasic,
     getCategoryIcon,
+    renderCategoryPills,
+    renderCatalogView,
+    state,
   };
 }
 

@@ -21,6 +21,8 @@ python3 build.py
 
 - **`resources/`**: Place files and subfolders here.
   - Detailed metadata guide: [English](docs/RESOURCES_GUIDE.md) | [Türkçe](docs/RESOURCES_GUIDE_TR.md)
+- **`config.yaml`**: Site configuration (language and strings file path).
+- **`locales/`**: Centralized string files (`tr.json` default, `en.json`). Use `--strings <path>` to override.
 - **`about.md`**: Landing page introduction and profile links.
 - **`templates/`**: Frontend assets (`index.html`, `styles.css`, `app.js`).
 

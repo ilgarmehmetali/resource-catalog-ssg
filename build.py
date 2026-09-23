@@ -79,6 +79,98 @@ IGNORED_SUFFIXES = (
     ".meta.json",
 )
 
+DEFAULT_FALLBACK_FILE = Path("locales/tr.json")
+
+
+def read_strings_file(file_path: Path | None) -> dict:
+    """Read and parse strings from a JSON or YAML file."""
+    if not file_path or not file_path.is_file():
+        return {}
+    try:
+        content = file_path.read_text(encoding="utf-8")
+        if file_path.suffix.lower() == ".json":
+            return json.loads(content)
+        return parse_yaml(content) or {}
+    except Exception:
+        return {}
+
+
+def load_config(config_file: Path | None) -> dict:
+    """Load configuration from config.yaml or config.json."""
+    if not config_file:
+        return {}
+    target = config_file
+    if not target.is_file():
+        for ext in [".yaml", ".yml", ".json"]:
+            alt = target.with_suffix(ext)
+            if alt.is_file():
+                target = alt
+                break
+        else:
+            return {}
+
+    try:
+        content = target.read_text(encoding="utf-8")
+        if target.suffix.lower() == ".json":
+            return json.loads(content)
+        return parse_yaml(content)
+    except Exception:
+        return {}
+
+
+def load_strings(
+    strings_file: Path | None = None,
+    config_strings_path: str | None = None,
+    fallback_file: Path | None = None,
+) -> dict:
+    """Load localized strings, merging overrides over a fallback strings file."""
+    fb_file = fallback_file or DEFAULT_FALLBACK_FILE
+    base_strings = read_strings_file(fb_file)
+
+    target_path = None
+    if strings_file:
+        target_path = strings_file
+    elif config_strings_path:
+        target_path = Path(config_strings_path)
+
+    if not target_path or not target_path.is_file():
+        for candidate in [
+            DEFAULT_FALLBACK_FILE,
+            Path("locales/en.json"),
+            Path("strings.json"),
+            Path("strings.yaml"),
+        ]:
+            if candidate.is_file():
+                target_path = candidate
+                break
+
+    if not target_path:
+        return base_strings
+
+    try:
+        if fb_file and fb_file.is_file() and target_path.resolve() == fb_file.resolve():
+            return base_strings
+    except Exception:
+        pass
+
+    user_strings = read_strings_file(target_path)
+
+    merged = dict(base_strings)
+    for k, v in user_strings.items():
+        if isinstance(v, dict) and isinstance(merged.get(k), dict):
+            merged[k] = {**merged[k], **v}
+        else:
+            merged[k] = v
+    return merged
+
+
+def interpolate_template(template_str: str, strings: dict) -> str:
+    """Replace {{key}} tokens with string values."""
+    for key, val in strings.items():
+        if isinstance(val, (str, int, float)):
+            template_str = template_str.replace(f"{{{{{key}}}}}", str(val))
+    return template_str
+
 
 def get_file_category(extension: str) -> str:
     """Return category identifier for a file extension."""
@@ -356,6 +448,9 @@ def build_catalog(
     output_dir: Path,
     templates_dir: Path,
     about_file: Path,
+    config_file: Path | None = None,
+    strings_file: Path | None = None,
+    fallback_file: Path | None = None,
     clean: bool = False,
 ) -> Path:
     """Build complete static site into output_dir."""
@@ -369,26 +464,43 @@ def build_catalog(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Scan resources
+    # 1. Load config and strings
+    config_data = load_config(config_file)
+    config_strings_path = config_data.get("strings")
+    config_fallback_path = config_data.get("fallback_strings")
+    fb = fallback_file or (Path(config_fallback_path) if config_fallback_path else None)
+    strings = load_strings(
+        strings_file=strings_file,
+        config_strings_path=config_strings_path,
+        fallback_file=fb,
+    )
+
+    # 2. Scan resources
     catalog_data = scan_catalog(source_dir)
 
-    # 2. Parse about / site intro info
+    # 3. Parse about / site intro info
     about_data = parse_about_file(about_file)
     catalog_data["about"] = about_data
+    catalog_data["strings"] = strings
 
-    # 3. Write catalog.json
+    # 4. Write catalog.json
     catalog_json_path = output_dir / "catalog.json"
     with open(catalog_json_path, "w", encoding="utf-8") as f:
         json.dump(catalog_data, f, indent=2, ensure_ascii=False)
 
-    # 4. Copy templates (index.html, styles.css, app.js)
+    # 5. Copy templates (interpolate index.html with localized strings, styles.css, app.js)
     if templates_dir.exists():
         for filename in ["index.html", "styles.css", "app.js"]:
             src_file = templates_dir / filename
             if src_file.is_file():
-                shutil.copy2(src_file, output_dir / filename)
+                if filename == "index.html":
+                    html_content = src_file.read_text(encoding="utf-8")
+                    interpolated = interpolate_template(html_content, strings)
+                    (output_dir / filename).write_text(interpolated, encoding="utf-8")
+                else:
+                    shutil.copy2(src_file, output_dir / filename)
 
-    # 5. Copy resources
+    # 6. Copy resources
     dist_resources_dir = output_dir / "resources"
     if dist_resources_dir.exists():
         shutil.rmtree(dist_resources_dir)
@@ -426,6 +538,9 @@ def main():
     parser.add_argument("--output", "-o", default="dist", help="Path to output directory")
     parser.add_argument("--templates", "-t", default="templates", help="Path to templates directory")
     parser.add_argument("--about", "-a", default="about.md", help="Path to about introduction markdown")
+    parser.add_argument("--config", "-cfg", default="config.yaml", help="Path to config file")
+    parser.add_argument("--strings", default=None, help="Path to custom strings file (overrides config)")
+    parser.add_argument("--fallback-strings", default=None, help="Path to fallback strings file (defaults to config or locales/tr.json)")
     parser.add_argument("--clean", "-c", action="store_true", help="Clean output directory before building")
     parser.add_argument("--serve", action="store_true", help="Start local preview HTTP server after building")
     parser.add_argument("--port", "-p", type=int, default=8000, help="Port for local development server")
@@ -436,6 +551,9 @@ def main():
     output_path = Path(args.output)
     templates_path = Path(args.templates)
     about_path = Path(args.about)
+    config_path = Path(args.config) if args.config else None
+    strings_path = Path(args.strings) if args.strings else None
+    fallback_path = Path(args.fallback_strings) if args.fallback_strings else None
 
     print(f"📦 Building catalog from '{source_path}' -> '{output_path}'...")
     dist_dir = build_catalog(
@@ -443,6 +561,9 @@ def main():
         output_dir=output_path,
         templates_dir=templates_path,
         about_file=about_path,
+        config_file=config_path,
+        strings_file=strings_path,
+        fallback_file=fallback_path,
         clean=args.clean,
     )
     print(f"✨ Build succeeded: static site generated at '{dist_dir}'")

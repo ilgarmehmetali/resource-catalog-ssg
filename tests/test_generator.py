@@ -16,9 +16,12 @@ from build import (
     clean_title_from_filename,
     format_bytes,
     get_file_category,
+    interpolate_template,
     is_ignored_file,
+    load_config,
     load_folder_metadata,
     load_sidecar_metadata,
+    load_strings,
     parse_about_file,
     parse_frontmatter,
     parse_yaml,
@@ -147,6 +150,59 @@ tags:
         # Check URL encoding on space
         self.assertEqual(items["my sheet.txt"]["url"], "resources/docs/my%20sheet.txt")
 
+    def test_interpolate_template(self):
+        tmpl = "<title>{{site_title}}</title><h1>{{brand_name}}</h1><p>{{unknown_token}}</p>"
+        strings = {
+            "site_title": "Özel Başlık",
+            "brand_name": "Katalog Projesi",
+        }
+        res = interpolate_template(tmpl, strings)
+        self.assertEqual(res, "<title>Özel Başlık</title><h1>Katalog Projesi</h1><p>{{unknown_token}}</p>")
+
+    def test_load_config(self):
+        # Non-existent config returns empty dict
+        self.assertEqual(load_config(self.test_dir / "nonexistent.yaml"), {})
+        self.assertEqual(load_config(None), {})
+
+        # YAML config
+        yaml_cfg = self.test_dir / "config.yaml"
+        yaml_cfg.write_text("language: en\nstrings: locales/en.json\n", encoding="utf-8")
+        loaded_yaml = load_config(yaml_cfg)
+        self.assertEqual(loaded_yaml.get("language"), "en")
+        self.assertEqual(loaded_yaml.get("strings"), "locales/en.json")
+
+        # JSON config
+        json_cfg = self.test_dir / "config.json"
+        json_cfg.write_text('{"language": "tr", "strings": "locales/tr.json"}', encoding="utf-8")
+        loaded_json = load_config(json_cfg)
+        self.assertEqual(loaded_json.get("language"), "tr")
+
+    def test_load_strings(self):
+        fallback_file = self.test_dir / "fallback.json"
+        fallback_file.write_text(
+            '{"site_title": "Varsayilan Baslik", "search_placeholder": "Ara...", "categories": {"document": "Belge", "markdown": "Markdown"}}',
+            encoding="utf-8",
+        )
+
+        custom_strings_file = self.test_dir / "custom_strings.json"
+        custom_strings_file.write_text(
+            '{"site_title": "Custom Brand", "categories": {"document": "Özel Belge"}}',
+            encoding="utf-8",
+        )
+
+        strings = load_strings(strings_file=custom_strings_file, fallback_file=fallback_file)
+        # Overridden fields
+        self.assertEqual(strings["site_title"], "Custom Brand")
+        self.assertEqual(strings["categories"]["document"], "Özel Belge")
+        # Merged fallback fields from fallback_file
+        self.assertEqual(strings["categories"]["markdown"], "Markdown")
+        self.assertEqual(strings["search_placeholder"], "Ara...")
+
+        # Also test default fallback to locales/tr.json when fallback_file is not specified
+        default_strings = load_strings()
+        self.assertIn("site_title", default_strings)
+        self.assertEqual(default_strings.get("html_lang"), "tr")
+
     def test_build_catalog_end_to_end(self):
         source = self.test_dir / "resources"
         source.mkdir()
@@ -154,12 +210,15 @@ tags:
 
         templates = self.test_dir / "templates"
         templates.mkdir()
-        (templates / "index.html").write_text("<html></html>", encoding="utf-8")
+        (templates / "index.html").write_text("<html><title>{{site_title}}</title></html>", encoding="utf-8")
         (templates / "styles.css").write_text("body {}", encoding="utf-8")
         (templates / "app.js").write_text("console.log('hi')", encoding="utf-8")
 
         about = self.test_dir / "about.md"
         about.write_text("---\nname: Alex\n---\nAbout me", encoding="utf-8")
+
+        custom_strings_file = self.test_dir / "my_strings.json"
+        custom_strings_file.write_text('{"site_title": "Test Title"}', encoding="utf-8")
 
         out = self.test_dir / "dist"
         build_catalog(
@@ -167,6 +226,7 @@ tags:
             output_dir=out,
             templates_dir=templates,
             about_file=about,
+            strings_file=custom_strings_file,
             clean=True,
         )
 
@@ -175,6 +235,17 @@ tags:
         self.assertTrue((out / "styles.css").is_file())
         self.assertTrue((out / "app.js").is_file())
         self.assertTrue((out / "resources" / "doc.txt").is_file())
+
+        # Verify index.html template interpolation
+        index_content = (out / "index.html").read_text(encoding="utf-8")
+        self.assertIn("<title>Test Title</title>", index_content)
+        self.assertNotIn("{{site_title}}", index_content)
+
+        # Verify catalog.json embedded strings
+        import json
+        catalog_data = json.loads((out / "catalog.json").read_text(encoding="utf-8"))
+        self.assertIn("strings", catalog_data)
+        self.assertEqual(catalog_data["strings"]["site_title"], "Test Title")
 
 
 if __name__ == "__main__":

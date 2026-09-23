@@ -1,117 +1,92 @@
-# Resources & Metadata Guide
+# Adding Resources & Information
 
-This guide explains how to organize files in the `resources/` directory and attach metadata using clean **YAML**.
+A quick guide for adding files, notes, and metadata to the catalog.
 
 [Türkçe Versiyon](RESOURCES_GUIDE_TR.md)
 
 ---
 
-## 1. Directory Structure
+## 1. Adding Files
 
-You can nest folders as deeply as you like inside `resources/`. The catalog generator automatically mirrors this folder hierarchy in the web viewer.
+Drop your files anywhere inside the `resources/` folder. You can create subfolders to organize them however you like:
 
 ```text
 resources/
-├── README.md                          <-- (Optional) Overview of the whole catalog
-├── documents/
-│   ├── README.md                      <-- (Optional) Overview of this specific folder
-│   ├── _meta.yaml                     <-- (Optional) Folder-level metadata
-│   ├── cheatsheet.txt
-│   ├── cheatsheet.txt.meta.yaml       <-- (Optional) Sidecar metadata for cheatsheet.txt
-│   └── tutorials/
-│       ├── getting-started.md         <-- Markdown with YAML frontmatter
-│       └── deep_dive/                 <-- Deeply nested subfolder
-│           └── notes.pdf
-└── media/
-    ├── diagram.svg
-    └── diagram.svg.meta.yaml
+├── my_document.pdf
+├── tutorials/
+│   ├── python_basics.md
+│   └── architecture_diagram.png
 ```
+
+- **Folder structure** is automatically mirrored in the catalog navigation.
+- **File names** are automatically converted into clean titles (e.g. `python_basics.md` becomes `Python Basics`).
+- **File categories & sizes** are detected automatically.
 
 ---
 
-## 2. Default Inferred Metadata
+## 2. Adding Details (Title, Description, Tags)
 
-If you don't provide any metadata files, the generator will still automatically extract:
-- **Title**: Formatted automatically from the filename.
-  - Example: `my-awesome_notes.pdf` becomes `My Awesome Notes`.
-- **Category**: Inferred from the file extension (`document`, `markdown`, `image`, `video`, `audio`, `code`, `archive`, `data`, or `other`).
-- **File Size**: Stored in bytes and pre-formatted into human-readable units (e.g. `14.2 KB`, `3.5 MB`).
-- **Last Modified Date**: Formatted in ISO-8601 UTC.
-- **Folder Path**: Inferred from the directory location relative to `resources/`.
+If you want to add a custom title, description, tags, or author to a file:
 
----
+### For Markdown Files (`.md`)
 
-## 3. Folder-Level Metadata
-
-### Folder Overview (`README.md` or `index.md`)
-Place a `README.md` or `index.md` inside any folder. The generator will render this markdown text right at the top of the folder's view in the web catalog.
-
-### Folder Metadata (`_meta.yaml`)
-Place a `_meta.yaml` in a folder to customize its display title and short description:
-
-```yaml
-title: Design Assets & Brand Guidelines
-description: Logos, color palettes, and brand guidelines for web and print.
-tags:
-  - design
-  - branding
-```
-
----
-
-## 4. File-Level Metadata
-
-### Option A: Sidecar Metadata File (`{filename}.meta.yaml`)
-For non-markdown files (such as `.pdf`, `.svg`, `.zip`, `.txt`, `.sh`, `.mp4`), you can place a companion YAML file with the same name followed by `.meta.yaml`:
-
-For `cheatsheet.txt`, create `cheatsheet.txt.meta.yaml`:
-```yaml
-title: Linux & Bash Quick Reference
-description: Everyday command line cheatsheet for archive, search, and disk usage commands.
-tags:
-  - linux
-  - bash
-  - cheatsheet
-author: Jane Doe
-```
-
-### Option B: Markdown Frontmatter
-For `.md` and `.markdown` files, you can place frontmatter directly at the beginning of the file surrounded by `---`:
+Add a metadata block between `---` at the very top of your `.md` file:
 
 ```markdown
 ---
-title: Modern Git Workflows
-description: Practical guide to trunk-based development and pull requests.
+title: Getting Started with Python
+description: A complete beginner guide covering installation and syntax.
 tags:
-  - git
-  - development
-  - best-practices
-author: Your Name
+  - python
+  - tutorial
+author: Jane Doe
 ---
 
-# Modern Git Workflows
+# Getting Started with Python
+Your content starts here...
+```
 
-Content starts here...
+### For All Other Files (`.pdf`, `.png`, `.zip`, etc.)
+
+Create a small `.meta.yaml` file next to your file with the same name.
+
+For example, for `my_document.pdf`, create `my_document.pdf.meta.yaml`:
+
+```yaml
+title: Annual Financial Report 2026
+description: Detailed balance sheet and quarterly summary.
+tags:
+  - finance
+  - report
+author: John Doe
 ```
 
 ---
 
-## 5. Supported Metadata Fields
+## 3. Available Fields
 
-| Field | Type | Description |
+| Field | Description | Example |
 |---|---|---|
-| `title` | string | Custom display title (replaces filename) |
-| `description` | string | One or two sentence summary shown on cards and tables |
-| `tags` | list of strings | Keywords used for filtering and search |
-| `author` | string | Author or contributor name |
-| `overview` | markdown string | Extended notes (typically from `README.md`) |
+| `title` | The main title shown for the file | `Annual Financial Report 2026` |
+| `description` | A short summary shown on the card | `Detailed balance sheet and quarterly summary.` |
+| `tags` | Keywords to help people filter and find your file | `[finance, report]` |
+| `author` | Author or contributor name | `Jane Doe` |
+
+All fields are optional.
 
 ---
 
-## 6. Ignored Files
+## 4. Adding a Folder Introduction (Optional)
 
-The generator automatically skips:
-- Any file or directory starting with a dot (`.` e.g. `.git`, `.DS_Store`).
-- Metadata sidecar files (`_meta.yaml`, `*.meta.yaml`, `_meta.json`, `*.meta.json`).
-- Folder overview files (`README.md`, `index.md`) are extracted into folder metadata and not listed as standalone download links.
+To add an introduction text or custom title to a folder:
+
+- **Folder Notes**: Add a `README.md` file inside the folder. Its text will be displayed at the top of that folder's page.
+- **Folder Title**: Add a `_meta.yaml` file inside the folder:
+  ```yaml
+  title: Developer Documentation
+  description: Guides, APIs, and setup notes for developers.
+  ```
+
+
+
 

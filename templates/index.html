@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{html_lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resource Catalog</title>
-  <meta name="description" content="A generic static resource catalog with instant search and folder navigation.">
+  <title>{{site_title}}</title>
+  <meta name="description" content="{{site_description}}">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,12 +13,12 @@
     <div class="nav-container">
       <a href="#/about" class="brand">
         <span class="brand-icon">📚</span>
-        <span class="brand-name">Resource Catalog</span>
+        <span class="brand-name">{{brand_name}}</span>
       </a>
 
       <nav class="nav-links">
-        <a href="#/about" class="active">About</a>
-        <a href="#/catalog">Catalog</a>
+        <a href="#/about" class="active">{{nav_about}}</a>
+        <a href="#/catalog">{{nav_catalog}}</a>
       </nav>
 
       <div class="nav-actions">
@@ -27,11 +27,11 @@
             type="search"
             id="global-search"
             class="search-input"
-            placeholder="Search catalog..."
-            aria-label="Search resources"
+            placeholder="{{search_placeholder}}"
+            aria-label="{{search_aria_label}}"
           >
         </div>
-        <button id="theme-toggle" class="btn btn-outline btn-sm" title="Toggle theme">
+        <button id="theme-toggle" class="btn btn-outline btn-sm" title="{{theme_toggle_title}}">
           🌙
         </button>
       </div>
@@ -41,7 +41,7 @@
   <!-- Main View Container -->
   <main id="main-content" class="container">
     <div class="empty-state">
-      <p>Loading catalog resources...</p>
+      <p>{{loading_text}}</p>
     </div>
   </main>
 

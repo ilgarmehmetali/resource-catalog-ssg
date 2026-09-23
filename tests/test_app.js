@@ -10,12 +10,54 @@ const assert = require("node:assert/strict");
 const {
   escapeHtml,
   sanitizeUrl,
+  t,
   parseRoute,
   buildBreadcrumbs,
   filterItems,
   renderMarkdownBasic,
   getCategoryIcon,
+  renderCategoryPills,
+  renderCatalogView,
+  state,
 } = require("../templates/app.js");
+
+describe("t (localization translation helper)", () => {
+  const sampleStrings = {
+    brand_name: "Kaynak Kataloğu",
+    search_placeholder: "Kaynakları ara...",
+    item_count: 42,
+    categories: {
+      document: "Belge",
+      markdown: "Markdown Belgesi",
+      code: "Kaynak Kod",
+    },
+  };
+
+  test("translates top-level keys with override", () => {
+    assert.equal(t("brand_name", "Default Brand", sampleStrings), "Kaynak Kataloğu");
+    assert.equal(t("search_placeholder", "Search...", sampleStrings), "Kaynakları ara...");
+  });
+
+  test("converts non-string values to string", () => {
+    assert.equal(t("item_count", "0", sampleStrings), "42");
+  });
+
+  test("translates nested dot-notation keys", () => {
+    assert.equal(t("categories.document", "Document", sampleStrings), "Belge");
+    assert.equal(t("categories.markdown", "Markdown", sampleStrings), "Markdown Belgesi");
+    assert.equal(t("categories.code", "Code", sampleStrings), "Kaynak Kod");
+  });
+
+  test("returns fallback when key is not found", () => {
+    assert.equal(t("missing_key", "Fallback Value", sampleStrings), "Fallback Value");
+    assert.equal(t("missing_key", "", sampleStrings), "");
+  });
+
+  test("returns fallback when nested path does not exist", () => {
+    assert.equal(t("categories.nonexistent", "Default Category", sampleStrings), "Default Category");
+    assert.equal(t("a.b.c.d", "Deep Fallback", sampleStrings), "Deep Fallback");
+  });
+});
 
 describe("escapeHtml", () => {
   test("handles null, undefined, and non-strings safely", () => {
@@ -253,5 +295,72 @@ describe("getCategoryIcon", () => {
     assert.equal(getCategoryIcon("code"), "💻");
     assert.equal(getCategoryIcon("video"), "🎬");
     assert.equal(getCategoryIcon("unknown_cat"), "📁");
+  });
+});
+
+describe("renderCategoryPills", () => {
+  test("renders all pill and category pills with counts and active states", () => {
+    state.catalog = {
+      total_items: 10,
+      categories: [
+        { id: "document", count: 6 },
+        { id: "code", count: 4 },
+      ],
+      strings: {
+        all_filter: "Tümü",
+        categories: {
+          document: "Belgeler",
+          code: "Kodlar",
+        },
+      },
+    };
+
+    const htmlNoActive = renderCategoryPills("", { folder: "docs" });
+    assert.ok(htmlNoActive.includes("filter-pill active"));
+    assert.ok(htmlNoActive.includes("Tümü (10)"));
+    assert.ok(htmlNoActive.includes("Belgeler (6)"));
+    assert.ok(htmlNoActive.includes("Kodlar (4)"));
+
+    const htmlActiveCode = renderCategoryPills("code", { folder: "" });
+    assert.ok(htmlActiveCode.includes('category=document" class="filter-pill "'));
+    assert.ok(htmlActiveCode.includes('href="#/catalog" class="filter-pill active"'));
+  });
+});
+
+describe("renderCatalogView", () => {
+  test("renders catalog layout with breadcrumbs, filter bar, subfolders, and items without error", () => {
+    state.catalog = {
+      total_items: 2,
+      categories: [{ id: "document", count: 2 }],
+      folders: {
+        "": { item_count: 2, direct_item_count: 1, subfolders: ["tutorials"] },
+        tutorials: { title: "Tutorials", item_count: 1, direct_item_count: 1, subfolders: [] },
+      },
+      items: [
+        {
+          id: "root.txt",
+          title: "Root Text",
+          filename: "root.txt",
+          path: "root.txt",
+          url: "resources/root.txt",
+          folder: "",
+          category: "document",
+          size_formatted: "1 KB",
+          tags: ["quick"],
+        },
+      ],
+      strings: {
+        all_filter: "All",
+        view_grid: "Grid",
+        view_table: "Table",
+        categories: { document: "Documents" },
+      },
+    };
+
+    const html = renderCatalogView({ folder: "" });
+    assert.ok(html.includes("catalog-layout"));
+    assert.ok(html.includes("filter-bar"));
+    assert.ok(html.includes("pills-scroll"));
+    assert.ok(html.includes("Root Text"));
   });
 });

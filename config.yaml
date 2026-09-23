@@ -1,0 +1,6 @@
+# Resource Catalog Site Configuration
+# Change strings file path to switch language between builds.
+language: tr
+strings: locales/tr.json
+fallback_strings: locales/tr.json
+

@@ -1,117 +1,92 @@
-# Kaynaklar ve Meta Veri Kılavuzu
+# Kaynak ve Bilgi Ekleme Rehberi
 
-Bu kılavuz, dosyalarınızı `resources/` dizini altında nasıl organize edeceğinizi ve yalın **YAML** kullanarak nasıl meta veri (metadata) ekleyeceğinizi açıklar.
+Kataloğa dosya yüklemek ve bunlara başlık, açıklama ve etiket eklemek için pratik kullanım rehberi.
 
 [English Version](RESOURCES_GUIDE.md)
 
 ---
 
-## 1. Dizin Yapısı
+## 1. Dosya Ekleme
 
-Dosyalarınızı `resources/` dizini içinde dilediğiniz derinlikte iç içe klasörlerde düzenleyebilirsiniz. Statik site üreteci, bu klasör hiyerarşisini web arayüzünde otomatik olarak yansıtır.
+Dosyalarınızı `resources/` klasörünün içine koymanız yeterlidir. Dilediğiniz gibi alt klasörler açarak düzenleyebilirsiniz:
 
 ```text
 resources/
-├── README.md                          <-- (İsteğe bağlı) Tüm kataloğun genel tanıtımı
-├── documents/
-│   ├── README.md                      <-- (İsteğe bağlı) Bu klasöre özel açıklama
-│   ├── _meta.yaml                     <-- (İsteğe bağlı) Klasör düzeyinde meta veri
-│   ├── cheatsheet.txt
-│   ├── cheatsheet.txt.meta.yaml       <-- (İsteğe bağlı) cheatsheet.txt için yardımcı meta veri dosyası
-│   └── tutorials/
-│       ├── getting-started.md         <-- YAML frontmatter içeren Markdown belgesi
-│       └── deep_dive/                 <-- Derin iç içe alt klasör
-│           └── notes.pdf
-└── media/
-    ├── diagram.svg
-    └── diagram.svg.meta.yaml
+├── dosyam.pdf
+├── egitimler/
+│   ├── python_temelleri.md
+│   └── sistem_semasi.png
 ```
+
+- **Klasör yapısı** katalogda otomatik olarak gezinme klasörlerine dönüşür.
+- **Dosya adları** otomatik olarak düzgün başlıklara çevrilir (örn. `python_temelleri.md` dosyasının başlığı `Python Temelleri` olur).
+- **Dosya kategorisi ve boyutu** sistem tarafından otomatik belirlenir.
 
 ---
 
-## 2. Otomatik Çıkarılan Varsayılan Meta Veriler
+## 2. Detaylı Bilgi Ekleme (Başlık, Açıklama, Etiketler)
 
-Herhangi bir meta veri dosyası eklemeseniz dahi, üreteç şu bilgileri otomatik olarak tespit eder:
-- **Başlık (Title)**: Dosya adından temizlenerek otomatik oluşturulur.
-  - Örnek: `benim-harika_notlarim.pdf` dosyası `Benim Harika Notlarim` haline gelir.
-- **Kategori (Category)**: Dosya uzantısından otomatik belirlenir (`document`, `markdown`, `image`, `video`, `audio`, `code`, `archive`, `data` veya `other`).
-- **Dosya Boyutu (File Size)**: Bayt cinsinden okunur ve okunabilir birimlere dönüştürülür (örn. `14.2 KB`, `3.5 MB`).
-- **Son Düzenleme Tarihi (Last Modified Date)**: ISO-8601 UTC biçiminde kaydedilir.
-- **Klasör Yolu (Folder Path)**: `resources/` köküne göre göreli konumu otomatik olarak işlenir.
+Bir dosyaya özel başlık, açıklama, etiketler veya yazar eklemek isterseniz:
 
----
+### Markdown Belgeleri İçin (`.md`)
 
-## 3. Klasör Düzeyinde Meta Veriler
-
-### Klasör Tanıtımı (`README.md` veya `index.md`)
-Herhangi bir klasörün içine `README.md` veya `index.md` koyabilirsiniz. Üreteç, bu markdown içeriğini web kataloğunda ilgili klasörün en üstünde şık bir tanıtım alanı olarak gösterir.
-
-### Klasör Meta Verisi (`_meta.yaml`)
-Bir klasörün görünen başlığını veya kısa açıklamasını özelleştirmek için klasöre bir `_meta.yaml` dosyası ekleyin:
-
-```yaml
-title: Tasarım Varlıkları ve Marka Rehberi
-description: Web ve baskı için logolar, renk paletleri ve marka kuralları.
-tags:
-  - tasarim
-  - marka
-```
-
----
-
-## 4. Dosya Düzeyinde Meta Veriler
-
-### Seçenek A: Yardımcı (Sidecar) Meta Veri Dosyası (`{dosya_adi}.meta.yaml`)
-Markdown olmayan dosyalar için (örn. `.pdf`, `.svg`, `.zip`, `.txt`, `.sh`, `.mp4`), dosya adının sonuna `.meta.yaml` ekleyerek bir yardımcı YAML dosyası oluşturabilirsiniz:
-
-Örneğin `cheatsheet.txt` için `cheatsheet.txt.meta.yaml` oluşturun:
-```yaml
-title: Linux ve Bash Hızlı Başvuru Kılavuzu
-description: Arşivleme, arama ve disk kullanımı için günlük terminal komutları özeti.
-tags:
-  - linux
-  - bash
-  - cheatsheet
-author: Ayşe Yılmaz
-```
-
-### Seçenek B: Markdown Frontmatter
-`.md` ve `.markdown` dosyalarında, dosyanın en başına `---` ayraçları arasına doğrudan frontmatter ekleyebilirsiniz:
+Dosyanızın en başına `---` arasına şu bilgi bloğunu ekleyin:
 
 ```markdown
 ---
-title: Modern Git İş Akışları
-description: Trunk-based geliştirme ve pull request süreçleri için pratik rehber.
+title: Python'a Giriş Rehberi
+description: Kurulum ve temel sözdizimini anlatan başlangıç kılavuzu.
 tags:
-  - git
-  - gelistirme
-  - en-iyi-pratikler
-author: Adınız Soyadınız
+  - python
+  - egitim
+author: Ayşe Yılmaz
 ---
 
-# Modern Git İş Akışları
-
+# Python'a Giriş Rehberi
 İçerik buradan başlar...
+```
+
+### Diğer Tüm Dosyalar İçin (`.pdf`, `.png`, `.zip` vb.)
+
+Dosyanızın hemen yanına aynı isimde bir `.meta.yaml` dosyası oluşturun.
+
+Örneğin `dosyam.pdf` için `dosyam.pdf.meta.yaml` dosyası oluşturup içine yazın:
+
+```yaml
+title: 2026 Yıllık Finans Raporu
+description: Üç aylık gelir özeti ve bilanço tablosu.
+tags:
+  - finans
+  - rapor
+author: Mehmet Demir
 ```
 
 ---
 
-## 5. Desteklenen Meta Veri Alanları
+## 3. Kullanabileceğiniz Bilgi Alanları
 
-| Alan | Tür | Açıklama |
+| Alan | Açıklama | Örnek |
 |---|---|---|
-| `title` | string (metin) | Özel görünen başlık (dosya adı yerine geçer) |
-| `description` | string (metin) | Kartlarda ve tabloda gösterilen bir veya iki cümlelik özet |
-| `tags` | string listesi | Filtreleme ve arama için kullanılan etiketler/anahtar kelimeler |
-| `author` | string (metin) | Yazar veya katkıda bulunan kişinin adı |
-| `overview` | markdown metni | Kapsamlı notlar (genellikle `README.md` dosyasından alınır) |
+| `title` | Dosyanın katalogda görünecek ana başlığı | `2026 Yıllık Finans Raporu` |
+| `description` | Kartta ve arama sonuçlarında gösterilecek kısa özet | `Üç aylık gelir özeti ve bilanço tablosu.` |
+| `tags` | Dosyanın kolay filtrelenmesini ve bulunmasını sağlayan etiketler | `[finans, rapor]` |
+| `author` | Dosyayı hazırlayan kişi veya katkıda bulunan | `Ayşe Yılmaz` |
+
+Tüm alanlar isteğe bağlıdır.
 
 ---
 
-## 6. Yoksayılan Dosyalar
+## 4. Klasöre Tanıtım Metni Ekleme (İsteğe Bağlı)
 
-Üreteç şu dosyaları katalog listesine almaz ve otomatik olarak atlar:
-- Nokta ile başlayan tüm dosya ve dizinler (`.` ile başlayanlar, örn. `.git`, `.DS_Store`).
-- Meta veri dosyaları (`_meta.yaml`, `*.meta.yaml`, `_meta.json`, `*.meta.json`).
-- Klasör tanıtım dosyaları (`README.md`, `index.md`) klasör meta verisine dahil edildiğinden ayrı birer indirme bağlantısı olarak listelenmez.
+Bir klasörün sayfasının en üstüne tanıtım yazısı veya özel başlık eklemek için:
+
+- **Klasör Notları**: Klasörün içine bir `README.md` dosyası koyun. Bu dosyadaki yazı, klasör sayfasının en üstünde görünür.
+- **Klasör Başlığı**: Klasörün içine bir `_meta.yaml` dosyası koyun:
+  ```yaml
+  title: Geliştirici Kılavuzları
+  description: Yazılımcılar için kurulum ve entegrasyon notları.
+  ```
+
+
+
 
