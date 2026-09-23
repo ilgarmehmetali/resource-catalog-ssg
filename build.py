@@ -322,7 +322,19 @@ def scan_catalog(resources_dir: Path) -> dict:
                 "author": item_meta.get("author", ""),
             }
             items.append(item)
-            folders[rel_folder]["item_count"] += 1
+
+    # Compute aggregate nested item counts and direct item counts for every folder
+    for f_path, f_data in folders.items():
+        if not f_path:
+            f_data["item_count"] = len(items)
+            f_data["direct_item_count"] = sum(1 for it in items if it["folder"] == "")
+        else:
+            prefix = f"{f_path}/"
+            f_data["item_count"] = sum(
+                1 for it in items
+                if it["folder"] == f_path or it["folder"].startswith(prefix)
+            )
+            f_data["direct_item_count"] = sum(1 for it in items if it["folder"] == f_path)
 
     categories_list = [
         {"id": cat, "count": count} for cat, count in sorted(category_counts.items(), key=lambda x: -x[1])

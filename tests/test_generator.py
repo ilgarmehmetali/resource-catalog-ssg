@@ -127,9 +127,20 @@ tags:
         (sub / "guide.md").write_text("---\ntitle: Guide\ntags: [docs]\n---\nBody", encoding="utf-8")
         (sub / "my sheet.txt").write_text("Sample", encoding="utf-8")
 
+        nested = sub / "tutorials"
+        nested.mkdir(parents=True)
+        (nested / "deep.txt").write_text("Deep content", encoding="utf-8")
+
         catalog = scan_catalog(res_dir)
-        self.assertEqual(catalog["total_items"], 2)
+        self.assertEqual(catalog["total_items"], 3)
         self.assertIn("docs", catalog["folders"])
+        self.assertIn("docs/tutorials", catalog["folders"])
+        # Check aggregate nested counts
+        self.assertEqual(catalog["folders"]["docs"]["item_count"], 3)
+        self.assertEqual(catalog["folders"]["docs"]["direct_item_count"], 2)
+        self.assertEqual(catalog["folders"]["docs/tutorials"]["item_count"], 1)
+        self.assertEqual(catalog["folders"]["docs/tutorials"]["direct_item_count"], 1)
+        self.assertEqual(catalog["folders"][""]["item_count"], 3)
 
         items = {item["filename"]: item for item in catalog["items"]}
         self.assertEqual(items["guide.md"]["title"], "Guide")

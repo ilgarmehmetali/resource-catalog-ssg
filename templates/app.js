@@ -474,8 +474,13 @@ function renderCatalogView(route) {
     ? `<div class="folder-overview markdown-body">${renderMarkdownBasic(folderData.overview)}</div>`
     : "";
 
-  const categoryPillsHtml = renderCategoryPills(category, route);
-  const itemsListHtml = renderItemsList(filteredItems);
+  const hasSubfolders = !isGlobalSearch && folderData.subfolders && folderData.subfolders.length > 0;
+  const emptyMsg = hasSubfolders
+    ? "No direct files in this folder. Browse the subfolders above."
+    : (isGlobalSearch
+        ? "No resources match your search or filter."
+        : "No resources found in this folder.");
+  const itemsListHtml = renderItemsList(filteredItems, emptyMsg);
 
   return `
     <div class="catalog-layout">
@@ -576,12 +581,14 @@ function renderSubfoldersHtml(subfolders) {
     .map((sf) => {
       const data = (state.catalog.folders && state.catalog.folders[sf]) || {};
       const name = data.title || sf.split("/").pop();
+      const count = data.item_count || 0;
+      const countLabel = count === 1 ? "1 item" : `${count} items`;
       return `
         <a href="#/catalog/${encodeURI(sf)}" class="subfolder-card">
           <span class="subfolder-icon">📁</span>
           <div class="subfolder-info">
             <span class="subfolder-title">${escapeHtml(name)}</span>
-            <span class="subfolder-count">${escapeHtml(data.item_count || 0)} items</span>
+            <span class="subfolder-count">${escapeHtml(countLabel)}</span>
           </div>
         </a>
       `;
@@ -596,11 +603,11 @@ function renderSubfoldersHtml(subfolders) {
   `;
 }
 
-function renderItemsList(items) {
+function renderItemsList(items, emptyMsg = "No resources match your current selection.") {
   if (items.length === 0) {
     return `
       <div class="empty-state">
-        <p>No resources match your current selection.</p>
+        <p>${escapeHtml(emptyMsg)}</p>
       </div>
     `;
   }
