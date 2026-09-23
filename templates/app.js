@@ -381,7 +381,7 @@ function renderApp() {
   if (!contentEl) return;
 
   if (route.view === "about") {
-    contentEl.innerHTML = renderAboutView(state.catalog.about, state.catalog);
+    contentEl.innerHTML = renderAboutView(state.catalog.about);
   } else if (route.view === "item") {
     contentEl.innerHTML = renderItemModalOrView(route.itemPath);
   } else {
@@ -389,7 +389,7 @@ function renderApp() {
   }
 }
 
-function renderAboutView(about = {}, catalog = {}) {
+function renderAboutView(about = {}) {
   const authorName = escapeHtml(about.name || "Resource Catalog");
   const tagline = escapeHtml(about.tagline || "");
   const bioHtml = renderMarkdownBasic(about.bio || "");
@@ -416,25 +416,6 @@ function renderAboutView(about = {}, catalog = {}) {
           <h1 class="author-name">${authorName}</h1>
           ${tagline ? `<p class="author-tagline">${tagline}</p>` : ""}
           <div class="author-links">${links}</div>
-        </div>
-      </div>
-
-      <div class="about-stats-grid">
-        <div class="stat-card">
-          <span class="stat-number">${catalog.total_items || 0}</span>
-          <span class="stat-label">Total Resources</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${catalog.total_folders || 0}</span>
-          <span class="stat-label">Folders</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${(catalog.categories || []).length}</span>
-          <span class="stat-label">Categories</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">${(catalog.tags || []).length}</span>
-          <span class="stat-label">Tags</span>
         </div>
       </div>
 
